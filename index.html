@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="description" content="A small calculator that generates Discord OAuth invite links">
+<meta name="author" content="Şero#0001">
+<meta name="keywords" content="Discord, bot, permissions, api">
+<link rel="icon" type="image/ico" href="https://discord.com/assets/07dca80a102d4149e9736d4b162cff6f.ico">
+<title>İzin Hesaplayıcı</title>
+<style>
+        @font-face {
+            font-family: "Roboto";
+            font-weight: 400;
+            font-style: normal;
+            /* Because China can't load GFonts */
+            src: local("Roboto"), local("Roboto-Regular"),
+                 url("font/roboto-v16-latin-regular.bin") format("woff2"),
+                 url("font/roboto-v16-latin-regular.woff") format("woff");
+            /* <=IE9? Sucks for you */
+        }
+        html, body {
+            height: 100%;
+            width: 100%;
+
+            margin: 0;
+            outline: 0;
+            padding: 0;
+
+            font-family: "Roboto", sans-serif;
+            font-size: 16px;
+        }
+        body {
+            background-color: #2C2F33;
+            color: #DDD;
+        }
+        h3 {
+            color: #FFF;
+            font-weight: normal;
+        }
+        a.disabled {
+            color: #999;
+            cursor: not-allowed;
+        }
+        a {
+            color: #FFF;
+        }
+        .light {
+            background-color: #FFF;
+            color: #2C2F33;
+        }
+        .light h3 {
+            color: #000;
+            font-weight: normal;
+        }
+        .light a {
+            color: blue;
+        }
+        .light .eyes {
+            filter: invert(1);
+        }
+        input[type="text"] {
+            background-color: transparent;
+            border: none;
+            border-bottom: 2px solid #7289DA;
+            color: #FFF;
+            outline: none;
+            padding: .25em;
+        }
+        input[type="text"].error {
+            border-bottom: 2px solid #F00;
+        }
+        input[type="text"].success {
+            border-bottom: 2px solid #2F2;
+        }
+        .small {
+            font-size: .8em;
+        }
+        .container {
+            margin: 0 auto;
+            max-width: 1280px;
+            padding: .5em;
+        }
+        .header, .footer {
+            background-color: #7289DA;
+            color: #FFF;
+        }
+        .header {
+            max-height: 3rem;
+
+            text-align: center;
+
+            z-index: 1;
+        }
+        .header .logo {
+            height: 100%;
+            width: auto;
+
+            max-height: 2.5rem;
+            max-width: 100%;
+
+            object-fit: contain;
+
+            vertical-align: middle;
+        }
+        .header .right-link {
+            float: right;
+            padding: .75em 1em;
+            text-decoration: none;
+            z-index: 1;
+        }
+        .header .right-link.eyes {
+            padding: 0 .5em;
+        }
+        .header .eyes img {
+            height: 100%;
+            width: auto;
+
+            max-height: 3rem;
+            max-width: 100%;
+
+            object-fit: contain;
+
+            vertical-align: middle;
+        }
+        .header .title {
+            font-size: 1.5rem;
+            line-height: 3rem;
+
+            height: 100%;
+
+            vertical-align: middle;
+        }
+        .result .equation {
+            font-size: .8em;
+        }
+        .result .permissions {
+            font-size: 1.5em;
+        }
+        .selector {
+            margin-bottom: 1em;
+            overflow: auto;
+            margin-left: -.5em;
+            margin-right: -.5em;
+        }
+        .selector .col-me-maybe {
+            float: left;
+            margin: 0 auto;
+            min-height: 1px;
+            box-sizing: border-box;
+            padding: 0 .5em;
+            /* More 3s than AP season */
+            width: 100%;
+        }
+        ul {
+            display: inline-block;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        input[type="checkbox" i] {
+            box-sizing: border-box;
+            color: inherit;
+            margin: 0;
+            padding: 0;
+        }
+        input[type="checkbox" i]:not(:checked), input[type="checkbox" i]:checked {
+            position: absolute;
+            left: -9999em;
+            opacity: 0;
+        }
+        input[type="checkbox" i]+label {
+            position: relative;
+            padding-left: 1.75em;
+            cursor: pointer;
+            display: inline-block;
+            height: 2em;
+            line-height: 1.375em;
+        }
+        input[type="checkbox" i]+label:after, input[type="checkbox" i]+label:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1em;
+            height: 1em;
+            border: 2px solid #888;
+            border-radius: 2px;
+            transition: .2s;
+            z-index: 0;
+        }
+        input[type="checkbox" i]+label:before {
+            border: 2px solid transparent;
+        }
+        input[type="checkbox" i]:checked+label:after, input[type="checkbox" i]:checked+label:before {
+            content: "";
+            left: 0;
+            position: absolute;
+        }
+        input[type="checkbox" i]:checked+label:after {
+            background-color: #7289DA;
+            border-color: #7289DA;
+        }
+        input[type="checkbox" i]:checked+label:before {
+            top: 0;
+            left: -.1em;
+            width: .2em;
+            height: .6em;
+            border-top: .2em solid transparent;
+            border-right: .2em solid #FFF;
+            border-bottom: .2em solid #FFF;
+            border-left: .2em solid transparent;
+            transform: rotateZ(45deg);
+            transform-origin: 100% 100%;
+            z-index: 1;
+        }
+        .footer {
+            box-sizing: border-box;
+            height: 3em;
+            max-height: 3em;
+            font-size: .8em;
+            margin: 0;
+            padding: 1em;
+        }
+        .large-only {
+            display: none;
+        }
+        .oauth a {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: bottom;
+            white-space: initial;
+            word-wrap: break-word;
+        }
+        .orangutan-not-orange {
+            color: #FAA61A;
+        }
+        .light .orangutan-not-orange {
+            color: #C88414;
+        }
+        .container.stacky-footer {
+            box-sizing: border-box;
+            z-index: 0;
+            min-height: calc(100vh - 3em - 3em);
+        }
+        @media only screen and (min-width: 640px) {
+            .footer {
+                font-size: 1em;
+            }
+            .large-only {
+                display: inline-block;
+            }
+            span.large-only {
+                display: inline;
+            }
+            .selector .col-me-maybe {
+                /* More 3s than AP season */
+                width: 33.3333333333%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+<img class="logo" src="https://discord.com/assets/1c8a54f25d101bdc607cec7228247a9a.svg" alt="Discord"> <span class="title">İzin Hesaplayıcı</span>
+<a class="right-link eyes" href="#" onclick="swapTheme()">
+<img src="https://abal.moe/eyes.png" alt="theme">
+</a>
+</div>
+<div class="container stacky-footer">
+<div class="result">
+<p>
+<span class="permissions">İzinler:<code id="number">0</code></span>
+<br>
+<span class="equation">Eşitlik: <code id="equation">0x0</code></span>
+</p>
+</div>
+<div class="selector">
+<div class="col-me-maybe">
+<h3>Genel İzinler</h3>
+<ul>
+<li>
+<input id="generalAdministrator" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="generalAdministrator">Yönetici</label>
+</li>
+<li>
+<input id="generalViewAuditLog" type="checkbox" onclick="recalculate()">
+<label for="generalViewAuditLog">Denetim Kaydını Görüntüle</label>
+</li>
+<li>
+<input id="generalManageServer" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="generalManageServer">Sunucuyu Yönet</label>
+</li>
+<li>
+<input id="generalManageRoles" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="generalManageRoles">Rolleri Yönet</label>
+</li>
+<li>
+<input id="generalManageChannels" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="generalManageChannels">Kanalları Yönet</label>
+</li>
+<li>
+<input id="generalKickMembers" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="generalKickMembers">Kullanıcıyı At</label>
+</li>
+<li>
+<input id="generalBanMembers" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="generalBanMembers">Kullanıcıyı Yasakla</label>
+</li>
+<li>
+<input id="generalCreateInstantInvite" type="checkbox" onclick="recalculate()">
+<label for="generalCreateInstantInvite">Davet Oluştur</label>
+</li>
+<li>
+<input id="generalChangeNickname" type="checkbox" onclick="recalculate()">
+<label for="generalChangeNickname">Kullanıcı Adı Değiştir</label>
+</li>
+<li>
+<input id="generalManageNicknames" type="checkbox" onclick="recalculate()">
+<label for="generalManageNicknames">Kullanıcı Adı Yönet</label>
+</li>
+<li>
+<input id="generalManageEmojis" type="checkbox" onclick="recalculate()">
+<label for="generalManageEmojis">Emojileri Yönet</label>
+</li>
+<li>
+<input id="generalManageWebhooks" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="generalManageWebhooks">Webhook'ları Yönet</label>
+</li>
+</ul>
+</div>
+<div class="col-me-maybe">
+<h3>Yazı İzinleri</h3>
+<ul>
+<li>
+<input id="textReadMessages" type="checkbox" onclick="recalculate(this)">
+<label for="textReadMessages">Mesajları Oku</label>
+</li>
+<li>
+<input id="textSendMessages" type="checkbox" onclick="recalculate()">
+<label for="textSendMessages">Mesaj Gönder</label>
+</li>
+<li>
+<input id="textSendTTSMessages" type="checkbox" onclick="recalculate()">
+<label for="textSendTTSMessages">Metin Okuma Mesajı Gönder</label>
+</li>
+<li>
+<input id="textManageMessages" type="checkbox" onclick="recalculate()">
+<label class="orangutan-not-orange" for="textManageMessages">Mesajları Yönet</label>
+</li>
+<li>
+<input id="textEmbedLinks" type="checkbox" onclick="recalculate()">
+<label for="textEmbedLinks">Bağlantı Yerleştir</label>
+</li>
+<li>
+<input id="textAttachFiles" type="checkbox" onclick="recalculate()">
+<label for="textAttachFiles">Dosya Ekle</label>
+</li>
+<li>
+<input id="textReadMessageHistory" type="checkbox" onclick="recalculate()">
+<label for="textReadMessageHistory">Mesaj Geçmişini Görüntüle</label>
+</li>
+<li>
+<input id="textMentionEveryone" type="checkbox" onclick="recalculate()">
+<label for="textMentionEveryone">@everyone, @here kullan ve Tüm Rollerden Bahset</label>
+</li>
+<li>
+<input id="textUseExternalEmojis" type="checkbox" onclick="recalculate()">
+<label for="textUseExternalEmojis">Harici Emoji Kullan</label>
+</li>
+<li>
+<input id="textAddReactions" type="checkbox" onclick="recalculate()">
+<label for="textAddReactions">Tepki Ekle</label>
+</li>
+</ul>
+</div>
+<div class="col-me-maybe">
+<h3>Sesli Konuşma İzinleri</h3>
+<ul>
+<li>
+<input id="voiceViewChannel" type="checkbox" onclick="recalculate(this)">
+<label for="voiceViewChannel">Kanalı Görüntüle</label>
+</li>
+<li>
+<input id="voiceConnect" type="checkbox" onclick="recalculate()">
+<label for="voiceConnect">Bağlan</label>
+</li>
+<li>
+<input id="voiceMuteMembers" type="checkbox" onclick="recalculate()">
+<label for="voiceMuteMembers">Üyeleri Sustur</label>
+</li>
+<li>
+<input id="voiceMoveMembers" type="checkbox" onclick="recalculate()">
+<label for="voiceMoveMembers">Üyeleri Taşı</label>
+</li>
+<li>
+<input id="voiceSpeak" type="checkbox" onclick="recalculate()">
+<label for="voiceSpeak">Konuş</label>
+</li>
+<li>
+<input id="voiceDeafenMembers" type="checkbox" onclick="recalculate()">
+<label for="voiceDeafenMembers">Üyeleri Sağırlaştır</label>
+</li>
+<li>
+<input id="voiceUseVAD" type="checkbox" onclick="recalculate()">
+<label for="voiceUseVAD">Ses Eylemini Kullan</label>
+</li>
+<li>
+<input id="voicePrioritySpeaker" type="checkbox" onclick="recalculate()">
+<label for="voicePrioritySpeaker">Öncelikli Konuşmacı</label>
+</li>
+</ul>
+</div>
+</div>
+<p><span class="orangutan-not-orange">Yeşil = sunucu <a href="https://support.discord.com/hc/en-us/articles/219576828-Setting-up-Two-Factor-Authentication">2 Aşamalı Doğrulama </a>  gerektiriyorsa bot sahibinin bunu aktif etmesi gereklidir.</span>
+<div class="oauth">
+<h3>OAuth URL Oluşturucu</h3>
+<p>
+<span>Client ID: <input id="clientID" type="text" placeholder="Insert Client ID here" onkeyup="recalculate()"></span>
+<br>
+<div class="selector">
+<div class="col-me-maybe">
+<input id="oauthCodeGrant" type="checkbox" onclick="recalculate()">
+<label for="oauthCodeGrant">Require Code Grant</label>
+</div>
+<div class="col-me-maybe">
+<span>Redirect URI: <input id="oauthRedirect" type="text" placeholder="(optional)" onkeyup="recalculate()"></span>
+</div>
+<div class="col-me-maybe">
+<span>Scope: <input id="oauthScopes" type="text" placeholder="bot" onkeyup="recalculate()"></span>
+</div>
+</div>
+<span>Link: <a href="#" id="invite"></a></span>
+
+</div>
+</div>
+<div class="footer">
+<span class="credit">&copy; 2020 Şero#0001 | Discord İle Bağlantısı Yoktur.!</span>
+</div>
+<script type="text/javascript">
+        var perms = {
+            // General
+            generalCreateInstantInvite: 0x1,
+            generalKickMembers: 0x2,
+            generalBanMembers: 0x4,
+            generalAdministrator: 0x8,
+            generalManageChannels: 0x10,
+            generalManageServer: 0x20,
+            generalChangeNickname: 0x4000000,
+            generalManageNicknames: 0x8000000,
+            generalManageRoles: 0x10000000,
+            generalManageWebhooks: 0x20000000,
+            generalManageEmojis: 0x40000000,
+            generalViewAuditLog: 0x80,
+            // Text
+            textAddReactions: 0x40,
+            textReadMessages: 0x400,
+            textSendMessages: 0x800,
+            textSendTTSMessages: 0x1000,
+            textManageMessages: 0x2000,
+            textEmbedLinks: 0x4000,
+            textAttachFiles: 0x8000,
+            textReadMessageHistory: 0x10000,
+            textMentionEveryone: 0x20000,
+            textUseExternalEmojis: 0x40000,
+            // Voice
+            voiceViewChannel: 0x400,
+            voiceConnect: 0x100000,
+            voiceSpeak: 0x200000,
+            voiceMuteMembers: 0x400000,
+            voiceDeafenMembers: 0x800000,
+            voiceMoveMembers: 0x1000000,
+            voiceUseVAD: 0x2000000,
+            voicePrioritySpeaker: 0x100
+        };
+        var darkTheme = true;
+
+        function swapTheme() {
+            darkTheme = !darkTheme;
+            if(darkTheme) {
+                document.body.className = "";
+            } else {
+                document.body.className = "light";
+            }
+        }
+
+        function recalculate(element, perm, noSet) {
+            if(element) {
+                if(element.id === "textReadMessages") {
+                    document.getElementById("voiceViewChannel").checked = element.checked;
+                }
+                if(element.id === "voiceViewChannel") {
+                    document.getElementById("textReadMessages").checked = element.checked;
+                }
+            }
+            var perm = perm || 0;
+            var eq = [];
+            for(var key in perms) {
+                if(key !== "voiceViewChannel" && document.getElementById(key).checked) {
+                    perm += perms[key];
+                    eq.push("0x" + perms[key].toString(16));
+                }
+            }
+            eq = " = " + eq.join(" | ")
+            document.getElementById("number").innerHTML = "" + perm;
+            document.getElementById("equation").innerHTML = perm + eq;
+
+            if(!noSet) {
+                setHash("" + perm);
+            }
+
+            if(document.getElementById("clientID").value) {
+                var clientID = document.getElementById("clientID").value;
+                var ok = clientID.match(/^\d{17,18}$/);
+                if(ok) {
+                    document.getElementById("clientID").className = "success";
+                    document.getElementById("invite").className = "";
+                } else {
+                    document.getElementById("clientID").className = "error";
+                    document.getElementById("invite").className = "disabled";
+                }
+
+                var scopes = document.getElementById("oauthScopes").value;
+                if(scopes) {
+                    scopes = encodeURIComponent(scopes.trim());
+                } else {
+                    scopes = "bot";
+                }
+
+                var url = "https://discord.com/oauth2/authorize?client_id=" + clientID +
+                    "&scope=" + scopes +
+                    "&permissions=" + perm;
+
+                if(document.getElementById("oauthCodeGrant").checked) {
+                    url += "&response_type=code"
+                }
+                if(document.getElementById("oauthRedirect").value) {
+                    url += "&redirect_uri=" + encodeURIComponent(document.getElementById("oauthRedirect").value);
+                }
+
+                document.getElementById("invite").innerHTML = document.getElementById("invite").href = url;
+            } else {
+                document.getElementById("clientID").className = "error";
+                document.getElementById("invite").className = "disabled";
+                document.getElementById("invite").innerHTML = "https://discord.com/oauth2/authorize?client_id=INSERT_CLIENT_ID_HERE&scope=bot&permissions=" + (perm + "").split("=")[0].trim();
+                document.getElementById("invite").href = "#";
+            }
+        }
+
+        function getHash(hash) {
+            hash = hash || window.location.hash;
+            if(hash && hash.length > 1) {
+                return hash.substring(1);
+            } else {
+                return null;
+            }
+        }
+
+        function setHash(data) {
+            if(history.pushState) {
+                history.pushState(null, null, "#" + data);
+            } else {
+                window.location.hash = "#" + data;
+            }
+        }
+
+        window.onpopstate = function(event) {
+            syncCheckboxes(+getHash(event.target.location.hash));
+            recalculate(null, null, true);
+        }
+
+        function syncCheckboxes(perm) {
+            for(let key in perms) {
+                if(perm & perms[key]) {
+                    document.getElementById(key).checked = true;
+                }
+            }
+        }
+
+        syncCheckboxes(+getHash());
+        recalculate(null, null, true);
+    </script>
+</body>
+</html>
